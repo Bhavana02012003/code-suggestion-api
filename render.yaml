@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: code-suggestion-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers=1 --threads=1 --timeout=120
+    envVars:
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+      - key: TRANSFORMERS_NO_ADVISORY_WARNINGS
+        value: "1"
+      - key: HF_HOME
+        value: /opt/render/project/.cache/huggingface
