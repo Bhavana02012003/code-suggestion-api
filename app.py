@@ -4,75 +4,45 @@ import torch
 
 app = Flask(__name__)
 
-# ✅ Load a lightweight open-source model (you can change it if needed)
-MODEL_NAME = "microsoft/CodeGPT-small-py"  # Good balance between size and code quality
-
-print("⏳ Loading model... (first time may take ~1 min)")
+# 🔥 Load a lightweight pretrained model (good for deployment)
+MODEL_NAME = "distilgpt2"  # small & fast
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForCausalLM.from_pretrained(MODEL_NAME)
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model.to(device)
-print("✅ Model loaded successfully!")
 
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({"message": "✅ Code Suggestion API is running!"})
+    return jsonify({"message": "🚀 Code Suggestion API is running!"})
 
 @app.route("/suggest", methods=["POST"])
-def suggest_fix():
-    """
-    Expects JSON:
-    {
-        "rule": "C0103",
-        "problem": "Variable name does not follow snake_case",
-        "code": "Var = 10"
-    }
-    Returns AI-suggested fix & explanation
-    """
+def suggest_code():
     try:
         data = request.get_json()
-        rule = data.get("rule", "")
-        problem = data.get("problem", "")
-        code = data.get("code", "")
+        prompt = data.get("prompt", "")
 
-        if not code:
-            return jsonify({"error": "Missing 'code' in request"}), 400
+        if not prompt:
+            return jsonify({"error": "No prompt provided"}), 400
 
-        # 🔥 Create an instruction-style prompt
-        prompt = (
-            f"You are a senior code reviewer. The following rule was violated: {rule}.\n"
-            f"Problem: {problem}\n"
-            f"Here is the code snippet:\n\n{code}\n\n"
-            "👉 Suggest a corrected version of the code and briefly explain the fix."
-        )
-
-        # 🧠 Generate suggestion
-        inputs = tokenizer(prompt, return_tensors="pt").to(device)
+        # 🔧 Generate code suggestion
+        inputs = tokenizer(prompt, return_tensors="pt")
         outputs = model.generate(
             **inputs,
-            max_new_tokens=200,
-            temperature=0.4,
-            do_sample=False,
-            pad_token_id=tokenizer.eos_token_id
+            max_new_tokens=80,  # how many tokens to generate
+            num_return_sequences=1,
+            temperature=0.7,
+            top_p=0.95,
+            do_sample=True
         )
-        generated = tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-        # ✂️ Post-process suggestion to show only the useful part
-        if "👉" in generated:
-            suggestion = generated.split("👉")[-1].strip()
-        else:
-            suggestion = generated.strip()
+        suggestion = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
         return jsonify({
-            "rule": rule,
-            "problem": problem,
-            "original_code": code,
+            "prompt": prompt,
             "suggestion": suggestion
         })
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    # 👇 Important: Render looks for `app:app` entrypoint (so keep this name)
-    app.run(host="0.0.0.0", port=5000)
+    # ✅ Important for Render: Bind to 0.0.0.0 and use PORT env variable
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

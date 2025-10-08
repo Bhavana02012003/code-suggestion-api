@@ -1,14 +1,8 @@
-# Python virtual environment
 venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Build / dist
-build/
-dist/
-
-# Model cache
-*.pt
-*.bin
+*.log
+*.DS_Store
+.env
