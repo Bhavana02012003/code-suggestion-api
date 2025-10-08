@@ -1,46 +1,6 @@
-# --- Python ---
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.log
-*.sqlite3
-
-# --- Virtual Environment ---
 venv/
 .venv/
-env/
-ENV/
-
-# --- Build & Distribution ---
-build/
-dist/
-*.egg-info/
-*.egg
-
-# --- Jupyter ---
-.ipynb_checkpoints
-
-# --- IDE & Editor ---
-.vscode/
-.idea/
-
-# --- OS & Misc ---
-.DS_Store
-Thumbs.db
-
-# --- Model Cache ---
-cache/
+__pycache__/
 models/
-hf_cache/
 transformers_cache/
-*.bin
-*.pt
-*.ckpt
-
-# --- PyInstaller ---
-*.spec
-
-# --- Render / Deployment ---
-*.pid
-*.log
+*.pyc
