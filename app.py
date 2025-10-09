@@ -1,20 +1,23 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+
+# ⚡ use only lightweight model
 from transformers import pipeline
 
 app = Flask(__name__)
 CORS(app)
 
-# ✅ Tiny model for free-tier (very lightweight)
-# This avoids Render memory crash
+# ✅ Load a tiny model so Render free tier can handle it
 try:
+    print("🚀 Loading model...")
     code_suggester = pipeline(
         "text-generation",
-        model="sshleifer/tiny-gpt2"  # very small model
+        model="sshleifer/tiny-gpt2"  # ✅ fits in free Render memory
     )
+    print("✅ Model loaded successfully.")
 except Exception as e:
+    print("❌ Error loading model:", e)
     code_suggester = None
-    print("❌ Failed to load model:", e)
 
 @app.route("/", methods=["GET"])
 def home():
@@ -31,13 +34,17 @@ def suggest_code():
             return jsonify({"error": "Missing 'prompt' in request body"}), 400
 
         prompt = data["prompt"]
-        result = code_suggester(prompt, max_length=80, num_return_sequences=1)
+        print(f"📝 Received prompt: {prompt}")
+
+        # Keep generation short to avoid Render timeout
+        result = code_suggester(prompt, max_length=50, num_return_sequences=1)
         suggestion = result[0]["generated_text"]
 
+        print(f"✅ Generated suggestion: {suggestion}")
         return jsonify({"prompt": prompt, "suggestion": suggestion})
     except Exception as e:
+        print("❌ Error in /suggest:", e)
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == "__main__":
     import os
