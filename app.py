@@ -5,34 +5,40 @@ from transformers import pipeline
 app = Flask(__name__)
 CORS(app)
 
-# 🧠 Load the model only once when the server starts (not for every request)
-try:
-    generator = pipeline("text-generation", model="microsoft/CodeGPT-small-py")
-except Exception as e:
-    generator = None
-    print("⚠️ Model failed to load:", e)
+# ✅ Load a small lightweight model for free-tier deployments
+# sshleifer/tiny-gpt2 is very small (~30MB)
+code_suggester = pipeline(
+    "text-generation",
+    model="sshleifer/tiny-gpt2"
+)
 
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "🚀 Code Suggestion API is running!"})
 
 @app.route("/suggest", methods=["POST"])
-def suggest():
+def suggest_code():
     try:
         data = request.get_json()
         prompt = data.get("prompt", "")
 
-        if generator is None:
-            return jsonify({"error": "Model could not be loaded due to memory or dependency issues."}), 500
+        if not prompt:
+            return jsonify({"error": "No prompt provided"}), 400
 
-        result = generator(prompt, max_length=100, num_return_sequences=1)
+        # Generate code suggestion
+        result = code_suggester(prompt, max_length=80, num_return_sequences=1)
         suggestion = result[0]["generated_text"]
 
-        return jsonify({"prompt": prompt, "suggestion": suggestion})
-
+        return jsonify({
+            "prompt": prompt,
+            "suggestion": suggestion
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    # Use port 10000 for Render (or 5000 for local)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
